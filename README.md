@@ -1,12 +1,13 @@
 # niuniuBot
 
-## How to start
+## 部署
+在项目目录中运行 ``，可能需要一段时间，耐心等待即可。
 
-1. generate project using `nb create` .
-2. create your plugin using `nb plugin create` .
-3. writing your plugins under `src/plugins` folder.
-4. run your bot using `nb run --reload` .
-
-## Documentation
-
-See [Docs](https://nonebot.dev/)
+```
+git clone https://github.com/Aestas16/niuniuBot.git
+cd niuniuBot
+python -m venv .venv                                # 需要等待一段时间
+source .venv/bin/activate                           # 进入虚拟环境
+pip install -r requirements.txt                     # 安装依赖
+nb run
+```
