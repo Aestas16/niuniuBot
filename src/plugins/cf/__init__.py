@@ -38,6 +38,8 @@ async def handle_function():
             start_time = contest["startTimeSeconds"]
             msg += datetime.datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S") + " 开始\n"
             duration = contest["durationSeconds"]
+            end_time = start_time + duration
+            msg += datetime.datetime.fromtimestamp(end_time).strftime("%Y-%m-%d %H:%M:%S") + " 结束\n"
             msg += "持续 %d h %02d min\n" % (duration // 3600, duration % 3600 // 60)
             msg += "\n"
         if msg == "":
