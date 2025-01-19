@@ -1,8 +1,6 @@
 # niuniuBot
 
 ## 部署
-在项目目录中运行 ``，可能需要一段时间，耐心等待即可。
-
 ```
 git clone https://github.com/Aestas16/niuniuBot.git
 cd niuniuBot
