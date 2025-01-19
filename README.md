@@ -1,6 +1,8 @@
 # niuniuBot
 
 ## 部署
+先按照[官方文档](https://nonebot.dev/docs/quick-start#%E5%AE%89%E8%A3%85%E8%84%9A%E6%89%8B%E6%9E%B6)安装 nb-cli。
+
 ```
 git clone https://github.com/Aestas16/niuniuBot.git
 cd niuniuBot
