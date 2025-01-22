@@ -9,6 +9,8 @@ from .config import Config
 from .models.pushgroup import PushGroup
 from .models.pushperson import PushPerson
 
+import requests
+
 __plugin_meta__ = PluginMetadata(
     name="pushpush",
     description="",
@@ -60,11 +62,21 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             return
         person_id = omsg[2].data["qq"]
         cf_username = omsg[3].data["text"].split()[0]
+        if not check_username(cf_username):
+            await push.send("不存在的 cf 用户或获取用户信息失败")
+            return
         await push_bind(person_id, cf_username)
         await push.send("绑定 codeforces 账号成功")
 
 def check_bind(omsg):
     return len(omsg) == 4 and omsg[2].type == "at"
+
+def check_username(username):
+    url = "https://codeforces.com/api/user.info?handles=" + username
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        return False
+    return resp.json()["status"] == "OK"
 
 async def push_group_turn_on(group_id):
     if group := await PushGroup.filter(id = group_id).first():
