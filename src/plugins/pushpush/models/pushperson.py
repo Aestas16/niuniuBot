@@ -4,7 +4,6 @@ from nonebot_plugin_tortoise_orm import add_model
 
 class PushPerson(Model):
     id = fields.IntField(pk = True)
-    cf_username = fields.CharField(max_length = 25, null = True)
     open = fields.BooleanField()
     class Meta:
         table = "pushperson"

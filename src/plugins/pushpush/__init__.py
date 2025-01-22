@@ -8,6 +8,7 @@ from nonebot.params import CommandArg
 from .config import Config
 from .models.pushgroup import PushGroup
 from .models.pushperson import PushPerson
+from .models.pushaccount import PushAccount
 
 import requests
 
@@ -53,11 +54,11 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             if ok:
                 await push.send(Message([MessageSegment.text("成功将"), MessageSegment.at(person_id), MessageSegment.text(" 移除加训列表")]))
             else:
-                await push.send("请先使用 /push bind @xxx cf_username 来绑定 cf 账号")
+                await push.send("请先使用 /push bind @xxx cf_username 来绑定至少一个 cf 账号")
         else:
             await push.send("参数错误")
     elif argv[1] == "bind":
-        if not check_bind(omsg):
+        if not (len(omsg) == 4 and omsg[2].type == "at"):
             await push.send("参数错误")
             return
         person_id = omsg[2].data["qq"]
@@ -66,10 +67,20 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             await push.send("不存在的 cf 用户或获取用户信息失败")
             return
         await push_bind(person_id, cf_username)
-        await push.send("绑定 codeforces 账号成功")
-
-def check_bind(omsg):
-    return len(omsg) == 4 and omsg[2].type == "at"
+    elif argv[1] == "unbind":
+        if len(argv) != 3:
+            await push.send("参数错误")
+            return
+        cf_username = argv[2]
+        await push_unbind(cf_username)
+    elif argv[1] == "list":
+        members = await bot.get_group_member_list(group_id = event.group_id)
+        msg = "加训列表：\n"
+        for member in members:
+            accounts = await query_person_pushed(member["user_id"])
+            if len(accounts) > 0:
+                msg += "%s（%s）\n" % (member["card"], "|".join(accounts))
+        await push.send(msg)
 
 def check_username(username):
     url = "https://codeforces.com/api/user.info?handles=" + username
@@ -92,13 +103,6 @@ async def push_group_turn_off(group_id):
     else:
         await PushGroup.create(id = group_id, open = False)
 
-async def push_bind(person_id, cf_username):
-    if person := await PushPerson.filter(id = person_id).first():
-        person.cf_username = cf_username
-        await person.save()
-    else:
-        await PushPerson.create(id = person_id, cf_username = cf_username, open = True)
-
 async def push_person_turn_on(person_id):
     if person := await PushPerson.filter(id = person_id).first():
         person.open = True
@@ -115,3 +119,33 @@ async def push_person_turn_off(person_id):
     else:
         return False
     
+async def push_bind(person_id, cf_username):
+    if account := await PushAccount.filter(id = cf_username).first():
+        await push.send("该 cf 账号已被绑定过")
+        return
+    await PushAccount.create(id = cf_username, person_id = person_id)
+    person = await PushPerson.filter(id = person_id).first()
+    if not person:
+        await PushPerson.create(id = person_id, open = True)
+    await push.send("绑定 cf 账号成功")
+    
+async def push_unbind(cf_username):
+    if account := await PushAccount.filter(id = cf_username).first():
+        person_id = account.person_id
+        await account.delete()
+        if not await PushAccount.filter(person_id = person_id).exists():
+            person = PushPerson.filter(id = person_id)
+            await person.delete()
+        await push.send("解绑 cf 账号成功")
+    else:
+        await push.send("该 cf 账号未被绑定过")
+
+
+async def query_person_pushed(person_id):
+    if person := await PushPerson.filter(id = person_id).first():
+        if not person.open:
+            return []
+    else:
+        return []
+    accounts = await PushAccount.filter(person_id = person_id)
+    return [account.id for account in accounts]
