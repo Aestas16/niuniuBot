@@ -137,4 +137,7 @@ dmypy.json
 # pytype static type analyzer
 .pytype/
 
+# SQLite DB
+*.db
+
 # End of https://www.toptal.com/developers/gitignore/api/python
