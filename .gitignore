@@ -139,5 +139,6 @@ dmypy.json
 
 # SQLite DB
 *.db
+database/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
