@@ -129,9 +129,12 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
         await push.send("参数错误")
 
 def check_username(username):
-    url = "https://codeforces.com/api/user.info?handles=" + username
-    resp = requests.get(url)
-    if resp.status_code != 200:
+    try:
+        url = "https://codeforces.com/api/user.info?handles=" + username
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            return False
+    except:
         return False
     return resp.json()["status"] == "OK"
 
@@ -197,9 +200,12 @@ async def query_person_pushed(person_id):
     return [account.id for account in accounts]
 
 def get_recent_solved(username, td):
-    url = "https://codeforces.com/api/user.status?handle=" + username
-    resp = requests.get(url)
-    if resp.status_code != 200:
+    try:
+        url = "https://codeforces.com/api/user.status?handle=" + username
+        resp = requests.get(url)
+        if resp.status_code != 200:
+            return None
+    except:
         return None
     now_time = datetime.now()
     problems = []
