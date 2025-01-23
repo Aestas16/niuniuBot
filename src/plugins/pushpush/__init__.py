@@ -42,9 +42,10 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             cnt = rated_cnt = rated_sum = 0
             solved = []
             for account in accounts:
-                acc_solved = get_recent_solved(account, timedelta(days = day))
-                if acc_solved is None:
-                    await push.send("无法获取提交记录")
+                try:
+                    acc_solved = get_recent_solved(account, timedelta(days = day))
+                except Exception as e:
+                    await push.send(str(e))
                     return
                 solved += acc_solved
             solved = [json.loads(item) for item in {json.dumps(d) for d in solved}]
@@ -97,8 +98,12 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             return
         person_id = omsg[2].data["qq"]
         cf_username = omsg[3].data["text"].split()[0]
-        if not check_username(cf_username):
-            await push.send("不存在的 cf 用户或获取用户信息失败")
+        try:
+            if not check_username(cf_username):
+                await push.send("获取用户信息失败")
+                return
+        except Exception as e:
+            await push.send(str(e))
             return
         await push_bind(person_id, cf_username)
     elif argv[1] == "unbind":
@@ -129,13 +134,10 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
         await push.send("参数错误")
 
 def check_username(username):
-    try:
-        url = "https://codeforces.com/api/user.info?handles=" + username
-        resp = requests.get(url)
-        if resp.status_code != 200:
-            return False
-    except:
-        return False
+    url = "https://codeforces.com/api/user.info?handles=" + username
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        raise Exception("code %d" % resp.status_code)
     return resp.json()["status"] == "OK"
 
 async def push_group_turn_on(group_id):
@@ -200,13 +202,10 @@ async def query_person_pushed(person_id):
     return [account.id for account in accounts]
 
 def get_recent_solved(username, td):
-    try:
-        url = "https://codeforces.com/api/user.status?handle=" + username
-        resp = requests.get(url)
-        if resp.status_code != 200:
-            return None
-    except:
-        return None
+    url = "https://codeforces.com/api/user.status?handle=" + username
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        raise Exception("code %d" % resp.status_code)
     now_time = datetime.now()
     problems = []
     for record in resp.json()["result"]:
