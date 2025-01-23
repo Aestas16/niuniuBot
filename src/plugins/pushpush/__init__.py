@@ -30,6 +30,7 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
     omsg = event.original_message
     argv = omsg[1].data["text"].split()
     if argv[1].isdigit():
+        await push.send("请稍等...")
         day = int(argv[1])
         members = await bot.get_group_member_list(group_id = event.group_id)
         dic = {}
@@ -74,7 +75,7 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             if ok:
                 await push.send(Message([MessageSegment.text("成功将"), MessageSegment.at(person_id), MessageSegment.text(" 加入加训列表")]))
             else:
-                await push.send("请先使用 /push bind @xxx cf_username 来绑定 cf 账号")
+                await push.send("请先使用 push bind 来绑定 cf 账号")
         else:
             await push.send("参数错误")
     elif argv[1] == "off":
