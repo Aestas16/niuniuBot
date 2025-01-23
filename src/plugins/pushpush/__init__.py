@@ -55,7 +55,7 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
                     rated_sum += problem["rating"]
             name = member["card"] if len(member["card"]) > 0 else member["nickname"]
             dic[name] = (cnt, rated_cnt, rated_sum)
-        sorted_dic = dict(sorted(dic.items(), key = lambda x: x[1][0], reverse = True))
+        sorted_dic = dict(sorted(dic.items(), key = lambda x: (x[1][0], no_zero_div(x[1][2], x[1][1])), reverse = True))
         rk = 0
         for member, value in sorted_dic.items():
             rk += 1
@@ -208,3 +208,6 @@ def get_recent_solved(username, td):
             break
         problems.append(record["problem"])
     return problems
+
+def no_zero_div(x, y):
+    return x / y if y != 0 else 0
