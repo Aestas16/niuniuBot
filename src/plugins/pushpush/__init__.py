@@ -87,7 +87,7 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
             if ok:
                 await push.send(Message([MessageSegment.text("成功将"), MessageSegment.at(person_id), MessageSegment.text(" 移除加训列表")]))
             else:
-                await push.send("请先使用 /push bind @xxx cf_username 来绑定至少一个 cf 账号")
+                await push.send("请先使用 push bind 来绑定至少一个 cf 账号")
         else:
             await push.send("参数错误")
     elif argv[1] == "bind":
@@ -115,6 +115,15 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
                 name = member["card"] if len(member["card"]) > 0 else member["nickname"]
                 msg += "%s（%s）\n" % (name, "|".join(accounts))
         await push.send(msg)
+    elif argv[1] == "help":
+        await push.send("push on: 启动本群加训模式\n" +
+                        "push off: 关闭本群加训模式\n" +
+                        "push on @xxx: 将群友 xxx 加入加训列表\n" +
+                        "push off @xxx: 将群友 xxx 移出加训列表\n" +
+                        "push bind @xxx [cf_username]: 绑定 xxx 的 Codeforces 账号\n" +
+                        "push unbind [cf_username]: 解绑 Codeforces 账号\n" +
+                        "push list: 查看加训列表\n" +
+                        "push [days]: 查看最近若干天内的 Codeforces 加训情况")
     else:
         await push.send("参数错误")
 
