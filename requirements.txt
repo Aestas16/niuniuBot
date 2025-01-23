@@ -19,9 +19,11 @@ certifi==2024.12.14
 cffi==1.17.1
 charset-normalizer==3.4.1
 click==8.1.8
+cookit==0.8.4
 emoji==2.14.1
 exceptiongroup==1.2.2
 fastapi==0.115.6
+fleep==1.0.1
 frozenlist==1.5.0
 h11==0.14.0
 h2==4.1.0
@@ -41,6 +43,7 @@ nonebot-adapter-onebot==2.4.6
 nonebot-plugin-alconna==0.54.2
 nonebot-plugin-localstore==0.7.3
 nonebot-plugin-ottohzys==0.2.1.post1
+nonebot-plugin-random-stereotypes==0.4.0
 nonebot-plugin-tortoise-orm==0.1.4
 nonebot-plugin-tsugu-bangdream-bot==0.4.1
 nonebot-plugin-uninfo==0.6.6
