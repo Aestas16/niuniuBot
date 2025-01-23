@@ -11,6 +11,8 @@ from .models.pushperson import PushPerson
 from .models.pushaccount import PushAccount
 
 import requests
+from datetime import timedelta, datetime
+import json
 
 __plugin_meta__ = PluginMetadata(
     name="pushpush",
@@ -27,11 +29,42 @@ push = on_command("push", rule = to_me())
 async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     omsg = event.original_message
     argv = omsg[1].data["text"].split()
-    if len(argv) <= 1:
-        await push.send("参数错误")
-        return
-
-    if argv[1] == "on":
+    if argv[1].isdigit():
+        day = int(argv[1])
+        members = await bot.get_group_member_list(group_id = event.group_id)
+        dic = {}
+        msg = ""
+        for member in members:
+            accounts = await query_person_pushed(member["user_id"])
+            if len(accounts) == 0:
+                continue
+            cnt = rated_cnt = rated_sum = 0
+            solved = []
+            for account in accounts:
+                acc_solved = get_recent_solved(account, timedelta(days = day))
+                if acc_solved is None:
+                    await push.send("无法获取提交记录")
+                    return
+                solved += acc_solved
+            solved = [json.loads(item) for item in {json.dumps(d) for d in solved}]
+            for problem in solved:
+                cnt += 1
+                if "rating" in problem:
+                    rated_cnt += 1
+                    rated_sum += problem["rating"]
+            name = member["card"] if len(member["card"]) > 0 else member["nickname"]
+            dic[name] = (cnt, rated_cnt, rated_sum)
+        sorted_dic = dict(sorted(dic.items(), key = lambda x: x[1][0], reverse = True))
+        rk = 0
+        for member, value in sorted_dic.items():
+            rk += 1
+            msg += "#%d %s  %d题 平均 rating: " % (rk, member, value[0])
+            if value[1] == 0:
+                msg += "?\n"
+            else:
+                msg += "%d\n" % round(value[2] / value[1])
+        await push.send(msg)
+    elif argv[1] == "on":
         if len(omsg) == 2:
             await push_group_turn_on(event.group_id)
             await push.send("本群加训模式已开启")
@@ -79,8 +112,11 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
         for member in members:
             accounts = await query_person_pushed(member["user_id"])
             if len(accounts) > 0:
-                msg += "%s（%s）\n" % (member["card"], "|".join(accounts))
+                name = member["card"] if len(member["card"]) > 0 else member["nickname"]
+                msg += "%s（%s）\n" % (name, "|".join(accounts))
         await push.send(msg)
+    else:
+        await push.send("参数错误")
 
 def check_username(username):
     url = "https://codeforces.com/api/user.info?handles=" + username
@@ -149,3 +185,16 @@ async def query_person_pushed(person_id):
         return []
     accounts = await PushAccount.filter(person_id = person_id)
     return [account.id for account in accounts]
+
+def get_recent_solved(username, td):
+    url = "https://codeforces.com/api/user.status?handle=" + username
+    resp = requests.get(url)
+    if resp.status_code != 200:
+        return None
+    now_time = datetime.now()
+    problems = []
+    for record in resp.json()["result"]:
+        if now_time - td > datetime.fromtimestamp(record["creationTimeSeconds"]):
+            break
+        problems.append(record["problem"])
+    return problems
