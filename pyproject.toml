@@ -9,6 +9,6 @@ requires-python = ">=3.9, <4.0"
 adapters = [
     { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
 ]
-plugins = ["nonebot_plugin_tortoise_orm", "nonebot_plugin_wordle", "nonebot_plugin_tsugu_bangdream_bot", "nonebot_plugin_ottohzys", "nonebot_plugin_random_stereotypes", "nonebot_plugin_pjsk"]
+plugins = ["nonebot_plugin_tortoise_orm", "nonebot_plugin_wordle", "nonebot_plugin_tsugu_bangdream_bot", "nonebot_plugin_ottohzys", "nonebot_plugin_random_stereotypes", "nonebot_plugin_pjsk", "nonebot_plugin_apscheduler"]
 plugin_dirs = ["src/plugins"]
 builtin_plugins = []

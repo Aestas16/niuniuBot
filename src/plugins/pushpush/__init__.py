@@ -1,8 +1,8 @@
-from nonebot import get_plugin_config, on_command
+from nonebot import get_plugin_config, on_command, require, get_bot
 from nonebot.plugin import PluginMetadata
 from nonebot.rule import to_me
 from nonebot.adapters.onebot.v11 import Message, Bot, GroupMessageEvent, MessageSegment
-
+from nonebot_plugin_apscheduler import scheduler
 from nonebot.params import CommandArg
 
 from .config import Config
@@ -13,6 +13,8 @@ from .models.pushaccount import PushAccount
 import requests
 from datetime import timedelta, datetime
 import json
+
+require("nonebot_plugin_apscheduler")
 
 __plugin_meta__ = PluginMetadata(
     name="pushpush",
@@ -25,6 +27,22 @@ config = get_plugin_config(Config)
 
 push = on_command("push", rule = to_me())
 
+@scheduler.scheduled_job("cron", hour = 20, minute = 0)
+async def scheduled_day_push():
+    groups = await PushGroup.filter(open = True).all()
+    bot = get_bot()
+    for group in groups:
+        await bot.call_api("send_group_msg", group_id = group.id, message = "今天，你加训了吗？以下是群友最近 24 小时 Codeforces 做题情况：")
+        await push_with_day(group.id, 1, at = True)
+
+@scheduler.scheduled_job("cron", day_of_week = "sun", hour = 8, minute = 0)
+async def scheduled_week_push():
+    groups = await PushGroup.filter(open = True).all()
+    bot = get_bot()
+    for group in groups:
+        await bot.call_api("send_group_msg", group_id = group.id, message = "这周你到底加训了没有？以下是群友最近一周 Codeforces 做题情况：")
+        await push_with_day(group.id, 1, at = True)
+
 @push.handle()
 async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = CommandArg()):
     omsg = event.original_message
@@ -32,40 +50,7 @@ async def handle_function(bot: Bot, event: GroupMessageEvent, args: Message = Co
     if argv[1].isdigit():
         await push.send("请稍等...")
         day = int(argv[1])
-        members = await bot.get_group_member_list(group_id = event.group_id)
-        dic = {}
-        msg = ""
-        for member in members:
-            accounts = await query_person_pushed(member["user_id"])
-            if len(accounts) == 0:
-                continue
-            cnt = rated_cnt = rated_sum = 0
-            solved = []
-            for account in accounts:
-                try:
-                    acc_solved = get_recent_solved(account, timedelta(days = day))
-                except Exception as e:
-                    await push.send(str(e))
-                    return
-                solved += acc_solved
-            solved = [json.loads(item) for item in {json.dumps(d) for d in solved}]
-            for problem in solved:
-                cnt += 1
-                if "rating" in problem:
-                    rated_cnt += 1
-                    rated_sum += problem["rating"]
-            name = member["card"] if len(member["card"]) > 0 else member["nickname"]
-            dic[name] = (cnt, rated_cnt, rated_sum)
-        sorted_dic = dict(sorted(dic.items(), key = lambda x: (x[1][0], no_zero_div(x[1][2], x[1][1])), reverse = True))
-        rk = 0
-        for member, value in sorted_dic.items():
-            rk += 1
-            msg += "#%d %s  %d题 平均 rating: " % (rk, member, value[0])
-            if value[1] == 0:
-                msg += "?\n"
-            else:
-                msg += "%d\n" % round(value[2] / value[1])
-        await push.send(msg)
+        await push_with_day(event.group_id, day, at = False)
     elif argv[1] == "on":
         if len(omsg) == 2:
             await push_group_turn_on(event.group_id)
@@ -216,3 +201,55 @@ def get_recent_solved(username, td):
 
 def no_zero_div(x, y):
     return x / y if y != 0 else 0
+
+async def push_with_day(group_id, day, at):
+    bot = get_bot()
+    members = await bot.get_group_member_list(group_id = group_id)
+    dic = {}
+    msg = ""
+    for member in members:
+        accounts = await query_person_pushed(member["user_id"])
+        if len(accounts) == 0:
+            continue
+        cnt = rated_cnt = rated_sum = 0
+        solved = []
+        for account in accounts:
+            try:
+                acc_solved = get_recent_solved(account, timedelta(days = day))
+            except Exception as e:
+                await bot.call_api("send_group_msg", group_id = group_id, message = str(e))
+                return
+            solved += acc_solved
+        solved = [json.loads(item) for item in {json.dumps(d) for d in solved}]
+        for problem in solved:
+            cnt += 1
+            if "rating" in problem:
+                rated_cnt += 1
+                rated_sum += problem["rating"]
+        dic[json.dumps(member, sort_keys = True)] = (cnt, rated_cnt, rated_sum)
+    sorted_dic = dict(sorted(dic.items(), key = lambda x: (x[1][0], no_zero_div(x[1][2], x[1][1])), reverse = True))
+    rk = 0
+    for memberstr, value in sorted_dic.items():
+        member = json.loads(memberstr)
+        rk += 1
+        name = member["card"] if len(member["card"]) > 0 else member["nickname"]
+        msg += "#%d %s  %d题 平均 rating: " % (rk, name, value[0])
+        if value[1] == 0:
+            msg += "?\n"
+        else:
+            msg += "%d\n" % round(value[2] / value[1])
+    await bot.call_api("send_group_msg", group_id = group_id, message = msg)
+    if at:
+        msg = Message()
+        need_push_num = len(sorted_dic) // 2
+        reversed_dic = {key: sorted_dic[key] for key in reversed(list(sorted_dic.keys()))}
+        las = -1
+        for memberstr, value in reversed_dic.items():
+            if need_push_num <= 0 and value[0] != las:
+                break
+            member = json.loads(memberstr)
+            msg += MessageSegment.at(member["user_id"]) + " "
+            need_push_num -= 1
+            las = value[0]
+        msg += "该加训了！！"
+        await bot.call_api("send_group_msg", group_id = group_id, message = msg)
