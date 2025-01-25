@@ -142,9 +142,9 @@ dmypy.json
 database/
 
 # ottohzys
-ottohzys/
+data/ottohzys/
 
 # pjsk
-pjsk/
+data/pjsk/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
