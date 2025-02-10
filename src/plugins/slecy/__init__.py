@@ -1,6 +1,6 @@
 from nonebot import get_plugin_config
 from nonebot.plugin import PluginMetadata
-from nonebot import on_fullmatch
+from nonebot import on_fullmatch, on_keyword
 
 from .config import Config
 
@@ -15,6 +15,12 @@ config = get_plugin_config(Config)
 
 slecy = on_fullmatch("slecy")
 
+slecy_keyword = on_keyword({"水7", "ppp", "缪", "声优", "你水", "跑活", "抽选"})
+
 @slecy.handle()
 async def handle_function():
+    await slecy.send("slecy")
+
+@slecy_keyword.handle()
+async def handle_function_keyword():
     await slecy.send("slecy")
