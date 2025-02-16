@@ -15,7 +15,7 @@ config = get_plugin_config(Config)
 
 slecy = on_fullmatch("slecy")
 
-slecy_keyword = on_keyword({"水7", "ppp", "缪", "声优", "你水", "跑活", "抽选"})
+slecy_keyword = on_keyword({"水7", "ppp", "缪", "声优", "你水", "跑活", "抽选", "水团", "小偶像", "aqours", "Aqours", "fmt", "莲团", "星团", "二偶"})
 
 @slecy.handle()
 async def handle_function():
